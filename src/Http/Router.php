@@ -4,21 +4,14 @@ namespace SprintPHP\Http;
 
 use Exception;
 use ReflectionClass;
-use ReflectionMethod;
-use ReflectionNamedType;
-use ReflectionObject;
-use ReflectionParameter;
 use SprintPHP\Attributes\Controller;
+use SprintPHP\Attributes\Delete;
 use SprintPHP\Attributes\Get;
+use SprintPHP\Attributes\Middleware;
 use SprintPHP\Attributes\Post;
 use SprintPHP\Attributes\Put;
-use SprintPHP\Attributes\Delete;
-use SprintPHP\Attributes\Body;
-use SprintPHP\Attributes\Middleware;
-use SprintPHP\Attributes\Param;
-use SprintPHP\Attributes\Query;
+use SprintPHP\Http\RequestBinder;
 use SprintPHP\Lib\Validation\ValidationEngine;
-use SprintPHP\Lib\Validator\DTO;
 
 class Router
 {
@@ -32,18 +25,13 @@ class Router
     }
 
     /**
-     * Registra um controller no Router, analisando seus atributos (Attributes)
-     * para mapear automaticamente as rotas HTTP disponíveis.
-     *
-     * @author Ramon
-     * @since 04/03/2026
+     * Registra controllers e mapeia rotas via Attributes
      */
     public function registerController(string $controller): void
     {
         $this->controllers[] = $controller;
 
         $reflection = new ReflectionClass($controller);
-
         $controllerPrefix = $this->getControllerPrefix($reflection);
 
         foreach ($reflection->getMethods() as $method)
@@ -51,7 +39,6 @@ class Router
             foreach ($method->getAttributes() as $attribute)
             {
                 $instance = $attribute->newInstance();
-
                 $httpMethod = $this->resolveHttpMethod($attribute->getName());
 
                 if (!$httpMethod)
@@ -70,12 +57,7 @@ class Router
     }
 
     /**
-     * Realiza o despacho da requisição recebida, identificando a rota correspondente
-     * com base na URI e no método HTTP, executando middlewares e chamando a ação
-     * do controller associada à rota.
-     *
-     * @author Ramon
-     * @since 04/03/2026
+     * Dispatcher principal
      */
     public function dispatch(string $uri, string $method)
     {
@@ -100,7 +82,10 @@ class Router
 
             $this->executeMiddlewares($controller, $action);
 
-            $params = $this->injectRequestDataIfNeeded($controller, $action, $method, $params);
+            $binder = new RequestBinder();
+            $params = $binder->bind($controller, $action, $method, $params);
+
+            ValidationEngine::validateParameters($controller, $action, $params);
 
             return $instance->$action(...$params);
         }
@@ -109,11 +94,7 @@ class Router
     }
 
     /**
-     * Resolve o método HTTP correspondente ao atributo da rota (Get, Post, Put, Delete),
-     * retornando o método HTTP utilizado na requisição.
-     *
-     * @author Ramon
-     * @since 04/03/2026
+     * Resolve método HTTP
      */
     private function resolveHttpMethod(string $attribute): ?string
     {
@@ -128,11 +109,7 @@ class Router
     }
 
     /**
-     * Obtém o prefixo definido no atributo Controller da classe analisada,
-     * utilizado para compor o caminho base das rotas do controller.
-     *
-     * @author Ramon
-     * @since 04/03/2026
+     * Prefixo do controller
      */
     private function getControllerPrefix(ReflectionClass $reflection): string
     {
@@ -147,11 +124,7 @@ class Router
     }
 
     /**
-     * Executa os middlewares definidos no controller ou no método da rota
-     * antes da execução da ação correspondente.
-     *
-     * @author Ramon
-     * @since 04/03/2026
+     * Executa middlewares
      */
     private function executeMiddlewares(string $controller, string $action): void
     {
@@ -165,7 +138,7 @@ class Router
             $middleware = $attr->newInstance();
             $middlewares[] = [
                 'class' => $middleware->class,
-                'method' => $middleware->method,
+                'method' => $middleware->method ?? 'handle',
             ];
         }
 
@@ -174,18 +147,18 @@ class Router
             $middleware = $attr->newInstance();
             $middlewares[] = [
                 'class' => $middleware->class,
-                'method' => $middleware->method,
+                'method' => $middleware->method ?? 'handle',
             ];
         }
 
         foreach ($middlewares as $middleware)
         {
             $class = $middleware['class'];
-            $method = $middleware['method'] ?? 'handle';
+            $method = $middleware['method'];
 
             if (!method_exists($class, $method))
             {
-                throw new \Exception("Middleware {$class}::{$method} não encontrado", 500);
+                throw new Exception("Middleware {$class}::{$method} não encontrado", 500);
             }
 
             $class::{$method}();
@@ -193,11 +166,7 @@ class Router
     }
 
     /**
-     * Realiza o match entre a URI da requisição e o padrão da rota registrada,
-     * suportando parâmetros dinâmicos definidos no formato {param}.
-     *
-     * @author Ramon
-     * @since 04/03/2026
+     * Match de rota com suporte a parâmetros {id}
      */
     private function matchRoute(string $routePath, string $uri)
     {
@@ -222,182 +191,5 @@ class Router
         }
 
         return false;
-    }
-    private function injectRequestDataIfNeeded(
-        string $controller,
-        string $action,
-        string $httpMethod,
-        array $params
-    ): array
-    {
-        $reflection = new ReflectionMethod($controller, $action);
-
-        $body = json_decode(file_get_contents('php://input'), true);
-        $body = is_array($body) ? $body : [];
-
-        $query = $_GET ?? [];
-        $routeParams = $params;
-
-        $finalParams = [];
-
-        foreach ($reflection->getParameters() as $param)
-        {
-            $type = $param->getType();
-            $paramName = $param->getName();
-
-            if ($type instanceof ReflectionNamedType && !$type->isBuiltin())
-            {
-                $className = $type->getName();
-
-                $source = $this->resolveDtoSource($param, $httpMethod);
-
-                $payload = match ($source)
-                {
-                    'query' => $query,
-                    'param' => $routeParams,
-                    default => $body,
-                };
-
-                $dtoValidate = new DTO;
-                $dtoValidate->validateData($className, (array) $payload, null, null, true);
-
-                $dto = new $className();
-
-                foreach ($payload as $key => $value)
-                {
-                    if (property_exists($dto, $key))
-                    {
-                        $dto->$key = $this->castDtoValue($dto, $key, $value);
-                    }
-                }
-
-                ValidationEngine::validateDTO($dto);
-
-                $finalParams[] = $dto;
-                continue;
-            }
-
-            if ($type instanceof ReflectionNamedType && $type->isBuiltin())
-            {
-                $value = null;
-
-                if (!empty($param->getAttributes(Param::class)))
-                {
-                    $value = $routeParams[$paramName] ?? null;
-                }
-
-                elseif (!empty($param->getAttributes(Query::class)))
-                {
-                    $value = $query[$paramName] ?? null;
-                }
-
-                else
-                {
-                    $value = $body[$paramName] ?? null;
-                }
-
-                if (is_string($value))
-                {
-                    $value = trim($value, '"\'');
-                }
-
-                $value = $this->castPrimitiveValue($type, $value);
-
-                if ($value === null && $param->isDefaultValueAvailable())
-                {
-                    $value = $param->getDefaultValue();
-                }
-
-                ValidationEngine::validateParameter($param, $value);
-
-                if ($value === null && !$type->allowsNull())
-                {
-                    throw new Exception("Parâmetro {$paramName} é obrigatório", 400);
-                }
-
-                $finalParams[] = $value;
-                continue;
-            }
-
-            $finalParams[] = null;
-        }
-
-        return $finalParams;
-    }
-
-    private function resolveDtoSource(ReflectionParameter $param, string $httpMethod): string
-    {
-        if (!empty($param->getAttributes(Param::class)))
-        {
-            return 'param';
-        }
-
-        if (!empty($param->getAttributes(Query::class)))
-        {
-            return 'query';
-        }
-
-        if (!empty($param->getAttributes(Body::class)))
-        {
-            return 'body';
-        }
-
-        return strtoupper($httpMethod) === 'GET' ? 'query' : 'body';
-    }
-
-    private function castDtoValue(object $dto, string $property, mixed $value): mixed
-    {
-        $reflection = new ReflectionObject($dto);
-
-        if (!$reflection->hasProperty($property))
-        {
-            return $value;
-        }
-
-        $prop = $reflection->getProperty($property);
-        $type = $prop->getType();
-
-        if (!$type instanceof ReflectionNamedType || !$type->isBuiltin())
-        {
-            return $value;
-        }
-
-        $typeName = $type->getName();
-
-        if ($value === null)
-        {
-            return null;
-        }
-
-        return match ($typeName)
-        {
-            'int' => is_numeric($value) ? (int) $value : $value,
-            'float' => is_numeric($value) ? (float) $value : $value,
-            'bool' => filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $value,
-            'string' => is_scalar($value) ? (string) $value : $value,
-            default => $value
-        };
-    }
-
-    private function castPrimitiveValue(?ReflectionNamedType $type, mixed $value): mixed
-    {
-        if (!$type || !$type->isBuiltin())
-        {
-            return $value;
-        }
-
-        if ($value === '' || $value === null)
-        {
-            return null;
-        }
-
-        return match ($type->getName())
-        {
-            'int' => is_numeric($value) ? (int) $value : null,
-            'float' => is_numeric($value) ? (float) $value : null,
-            'bool' => filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),
-            'string' => (string) $value,
-            default => $value
-        };
     }
 }

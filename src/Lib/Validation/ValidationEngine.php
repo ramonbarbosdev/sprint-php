@@ -2,51 +2,63 @@
 
 namespace SprintPHP\Lib\Validation;
 
-use App\Api\Attributes\Max;
-use App\Api\Attributes\Min;
-use App\Api\Attributes\Required;
-use App\Api\Exception\ValidationException;
+use SprintPHP\Attributes\Max;
+use SprintPHP\Attributes\Min;
+use SprintPHP\Attributes\Required;
+use SprintPHP\Exception\ValidationException;
 use ReflectionClass;
 use ReflectionParameter;
 
 class ValidationEngine
 {
-    public static function validateParameter(ReflectionParameter $param, mixed $value): void
+    public static function validateParameters(string $controller, string $action, array $values): void
     {
+        $reflection = new \ReflectionMethod($controller, $action);
         $errors = [];
-        $name = $param->getName();
 
-        if ($attr = $param->getAttributes(Required::class)[0] ?? null)
+        foreach ($reflection->getParameters() as $index => $param)
         {
-            if ($attr->newInstance()->value && $value === null)
+            $value = $values[$index] ?? null;
+            $name = $param->getName();
+
+            // Required
+            if ($attr = $param->getAttributes(Required::class)[0] ?? null)
             {
-                $errors[$name] = 'é obrigatório';
+                if ($attr->newInstance()->value && $value === null)
+                {
+                    $errors[$name] = 'é obrigatório';
+                    continue;
+                }
             }
-        }
 
-        if ($attr = $param->getAttributes(Min::class)[0] ?? null)
-        {
-            $min = $attr->newInstance()->value;
-
-            if ($value !== null && $value < $min)
+            // Min
+            if ($attr = $param->getAttributes(Min::class)[0] ?? null)
             {
-                $errors[$name] = "deve ser maior ou igual a {$min}";
+                $min = $attr->newInstance()->value;
+
+                if ($value !== null && $value < $min)
+                {
+                    $errors[$name] = "deve ser maior ou igual a {$min}";
+                    continue;
+                }
             }
-        }
 
-        if ($attr = $param->getAttributes(Max::class)[0] ?? null)
-        {
-            $max = $attr->newInstance()->value;
-
-            if ($value !== null && $value > $max)
+            // Max
+            if ($attr = $param->getAttributes(Max::class)[0] ?? null)
             {
-                $errors[$name] = "deve ser menor ou igual a {$max}";
+                $max = $attr->newInstance()->value;
+
+                if ($value !== null && $value > $max)
+                {
+                    $errors[$name] = "deve ser menor ou igual a {$max}";
+                    continue;
+                }
             }
         }
 
         if (!empty($errors))
         {
-            throw new ValidationException($errors);
+            throw new ValidationException("Erro de validação", $errors);
         }
     }
 
@@ -91,7 +103,7 @@ class ValidationEngine
 
         if (!empty($errors))
         {
-            throw new ValidationException($errors);
+            throw new ValidationException("Erro de validação", $errors);
         }
     }
 }
