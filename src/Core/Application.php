@@ -5,6 +5,7 @@ namespace SprintPHP\Core;
 use SprintPHP\Http\Router;
 use SprintPHP\Http\Response;
 use Throwable;
+use SprintPHP\Core\BaseKernel;
 
 class Application
 {
@@ -14,6 +15,11 @@ class Application
     public function __construct()
     {
         $this->router = new Router();
+    }
+
+    public function useKernel(BaseKernel $kernel): void
+    {
+        $kernel->boot();
     }
 
     // =========================
@@ -69,10 +75,5 @@ class Application
 
         // remove /api.php se existir
         return str_replace('/api.php', '', $uri);
-    }
-
-    public function useKernel(BaseKernel $kernel): void
-    {
-        $kernel->boot();
     }
 }
