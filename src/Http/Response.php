@@ -29,4 +29,11 @@ class Response
             "details" => $details
         ], $status);
     }
+
+    public static function raw(array $data): void
+    {
+        header('Content-Type: application/json');
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
 }
