@@ -4,7 +4,6 @@ namespace SprintPHP\Lib\Validation;
 
 use Exception;
 use ReflectionClass;
-use ReflectionNamedType;
 use SprintPHP\Exception\ValidationException;
 use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -50,15 +49,6 @@ class DTO
                 if ($reflection->hasProperty($key))
                 {
                     $property = $reflection->getProperty($key);
-                    $type = $property->getType();
-
-                    // 🔒 PROTEÇÃO CRÍTICA
-                    if ($type instanceof ReflectionNamedType && !$type->allowsNull() && $value === null)
-                    {
-                        // não seta → deixa validator cuidar
-                        continue;
-                    }
-
                     $property->setValue($dto, $value);
                 }
             }
@@ -85,7 +75,7 @@ class DTO
         {
             if ($flApi)
             {
-                throw new ValidationException("Erro de validação", $this->formatarErrosApi($errors));
+                throw new ValidationException("",$this->formatarErrosApi($errors));
             }
 
             return $this->formatarErros($errors);
