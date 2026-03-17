@@ -80,7 +80,10 @@ class Router
 
             $instance = new $controller();
 
-            $this->executeMiddlewares($controller, $action);
+            if (!$this->isPublicRoute($controller, $action))
+            {
+                $this->executeMiddlewares($controller, $action);
+            }
 
             $binder = new RequestBinder();
             $params = $binder->bind($controller, $action, $method, $params);
@@ -190,6 +193,24 @@ class Router
             }
 
             return $namedParams;
+        }
+
+        return false;
+    }
+
+    private function isPublicRoute(string $controller, string $action): bool
+    {
+        $reflection = new ReflectionClass($controller);
+        $method = $reflection->getMethod($action);
+
+        if (!empty($method->getAttributes(\SprintPHP\Attributes\PublicRoute::class)))
+        {
+            return true;
+        }
+
+        if (!empty($reflection->getAttributes(\SprintPHP\Attributes\PublicRoute::class)))
+        {
+            return true;
         }
 
         return false;
