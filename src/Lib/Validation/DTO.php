@@ -70,12 +70,17 @@ class DTO
 
 
         $errors = $this->validator->validate($dto, $constraints, $groups);
-        
+
         if (count($errors) > 0)
         {
             if ($flApi)
             {
-                throw new ValidationException("", $this->formatarErrosApi($errors));
+
+                $formatted = $this->formatarErrosApi($errors);
+
+                $firstError = array_values($formatted)[0][0] ?? "Erro de validação";
+
+                throw new ValidationException($firstError, $formatted);
             }
 
             return $this->formatarErros($errors);
@@ -129,7 +134,10 @@ class DTO
 
         foreach ($errors as $error)
         {
-            $fields[$error->getPropertyPath()] = $error->getMessage();
+            $field = $error->getPropertyPath();
+            $message = $error->getMessage();
+
+            $fields[$field][] = $message; // 🔥 array
         }
 
         return $fields;
