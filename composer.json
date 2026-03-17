@@ -1,10 +1,17 @@
 {
   "name": "ramoncode/sprint-php",
-  "description": "Lightweight PHP framework inspired by Spring Boot",
+  "description": "SprintPHP - Lightweight PHP framework inspired by Spring Boot",
+  "type": "library",
+  "license": "MIT",
+
   "autoload": {
     "psr-4": {
       "SprintPHP\\": "src/"
     }
   },
-  "require": {}
+
+  "require": {
+    "php": "^8.1",
+    "illuminate/database": "^10.0"
+  }
 }

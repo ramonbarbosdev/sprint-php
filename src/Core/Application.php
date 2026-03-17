@@ -9,22 +9,45 @@ use Throwable;
 class Application
 {
     private Router $router;
+    private array $bootstrappers = [];
 
     public function __construct()
     {
         $this->router = new Router();
     }
 
+    // =========================
+    // Controllers
+    // =========================
     public function registerController(string $controller): void
     {
         $this->router->registerController($controller);
     }
 
+    // =========================
+    // Bootstrappers (tipo Spring Config)
+    // =========================
+    public function bootstrap(callable $callback): void
+    {
+        $this->bootstrappers[] = $callback;
+    }
+
+    public function boot(): void
+    {
+        foreach ($this->bootstrappers as $bootstrap)
+        {
+            $bootstrap($this);
+        }
+    }
+
+    // =========================
+    // Run
+    // =========================
     public function run(): void
     {
         try
         {
-            $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+            $uri = $this->resolveUri();
             $method = $_SERVER['REQUEST_METHOD'];
 
             $response = $this->router->dispatch($uri, $method);
@@ -35,5 +58,21 @@ class Application
         {
             ExceptionHandler::handle($e);
         }
+    }
+
+    // =========================
+    // Helpers
+    // =========================
+    private function resolveUri(): string
+    {
+        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+        // remove /api.php se existir
+        return str_replace('/api.php', '', $uri);
+    }
+
+    public function useKernel(BaseKernel $kernel): void
+    {
+        $kernel->boot();
     }
 }
