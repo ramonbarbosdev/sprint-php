@@ -13,17 +13,25 @@ class ExceptionHandler
         if ($e instanceof ValidationException)
         {
             Response::error(
-                $e->getMessage(),
+                $e->getMessage() ?: "Erro de validação",
                 400,
                 $e->getErrors() ?? null
             );
+            return;
         }
 
         if ($e->getCode() >= 400 && $e->getCode() < 600)
         {
-            Response::error($e->getMessage(), $e->getCode());
+            Response::error(
+                $e->getMessage() ?: "Erro",
+                $e->getCode()
+            );
+            return;
         }
 
-        Response::error($e->getMessage(), 500);
+        Response::error(
+            $e->getMessage() ?: "Erro interno",
+            500
+        );
     }
 }
