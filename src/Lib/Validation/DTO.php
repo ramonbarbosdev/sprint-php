@@ -75,7 +75,7 @@ class DTO
         {
             if ($flApi)
             {
-                throw new ValidationException($errors);
+                throw new ValidationException("",$this->formatarErrosApi($errors));
             }
 
             return $this->formatarErros($errors);
