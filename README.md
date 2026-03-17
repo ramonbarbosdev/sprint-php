@@ -120,7 +120,7 @@ class TestController
     #[Get('')]
     public function index()
     {
-        return ["message" => "SprintPHP funcionando 🚀"];
+        return ["message" => "SprintPHP funcionando"];
     }
 }
 ```
