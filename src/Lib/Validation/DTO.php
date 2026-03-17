@@ -1,6 +1,6 @@
 <?php
 
-namespace SprintPHP\Lib\Validator;
+namespace SprintPHP\Lib\Validation;
 
 use App\Api\Exception\ValidationException;
 use Exception;

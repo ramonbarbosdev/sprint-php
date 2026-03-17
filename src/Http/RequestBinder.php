@@ -9,7 +9,7 @@ use ReflectionParameter;
 use SprintPHP\Attributes\Body;
 use SprintPHP\Attributes\Param;
 use SprintPHP\Attributes\Query;
-use SprintPHP\Lib\Validator\DTO;
+use SprintPHP\Lib\Validation\DTO;
 
 class RequestBinder
 {
