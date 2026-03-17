@@ -48,7 +48,7 @@ project/
 
 ## 3. Criar o entrypoint da aplicação
 
-### `public/api.php`
+### `api.php`
 
 ```php
 use SprintPHP\Core\Application;
