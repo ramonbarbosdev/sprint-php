@@ -59,6 +59,8 @@ class Application
     {
         try
         {
+            RouterHolder::set($this->router);
+
             $uri = $this->resolveUri();
             $method = $_SERVER['REQUEST_METHOD'];
 
