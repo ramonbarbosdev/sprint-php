@@ -7,7 +7,6 @@ use SprintPHP\Attributes\Min;
 use SprintPHP\Attributes\Required;
 use SprintPHP\Exception\ValidationException;
 use ReflectionClass;
-use ReflectionParameter;
 
 class ValidationEngine
 {
@@ -21,7 +20,6 @@ class ValidationEngine
             $value = $values[$index] ?? null;
             $name = $param->getName();
 
-            // Required
             if ($attr = $param->getAttributes(Required::class)[0] ?? null)
             {
                 if ($attr->newInstance()->value && $value === null)
@@ -31,7 +29,6 @@ class ValidationEngine
                 }
             }
 
-            // Min
             if ($attr = $param->getAttributes(Min::class)[0] ?? null)
             {
                 $min = $attr->newInstance()->value;
@@ -43,7 +40,6 @@ class ValidationEngine
                 }
             }
 
-            // Max
             if ($attr = $param->getAttributes(Max::class)[0] ?? null)
             {
                 $max = $attr->newInstance()->value;
