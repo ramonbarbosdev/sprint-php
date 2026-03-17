@@ -4,7 +4,7 @@ namespace SprintPHP\Core;
 
 use Throwable;
 use SprintPHP\Http\Response;
-use SprintPHP\Lib\Validation\ValidationException;
+use SprintPHP\Exception\ValidationException;
 
 class ExceptionHandler
 {
@@ -12,8 +12,7 @@ class ExceptionHandler
     {
         if ($e instanceof ValidationException)
         {
-             var_dump($e->getErrors());
-    die;
+             
             Response::error(
                 $e->getMessage() ?: "Erro de validação",
                 400,
