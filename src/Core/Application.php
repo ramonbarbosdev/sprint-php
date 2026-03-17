@@ -11,6 +11,7 @@ class Application
 {
     private Router $router;
     private array $bootstrappers = [];
+    private array $middlewares = [];
 
     public function __construct()
     {
@@ -20,6 +21,11 @@ class Application
     public function useKernel(BaseKernel $kernel): void
     {
         $kernel->boot();
+    }
+
+    public function use(string $middleware): void
+    {
+        $this->middlewares[] = $middleware;
     }
 
     // =========================
@@ -56,6 +62,8 @@ class Application
             $uri = $this->resolveUri();
             $method = $_SERVER['REQUEST_METHOD'];
 
+            $this->runMiddlewares();
+
             $response = $this->router->dispatch($uri, $method);
 
             Response::success($response);
@@ -73,7 +81,26 @@ class Application
     {
         $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-        // remove /api.php se existir
         return str_replace('/api.php', '', $uri);
+    }
+
+    private function runMiddlewares(): void
+    {
+        foreach ($this->middlewares as $middleware)
+        {
+            if (!class_exists($middleware))
+            {
+                throw new \Exception("Middleware {$middleware} não encontrado");
+            }
+
+            $instance = new $middleware();
+
+            if (!method_exists($instance, 'handle'))
+            {
+                throw new \Exception("Middleware {$middleware}::handle não existe");
+            }
+
+            $instance->handle();
+        }
     }
 }

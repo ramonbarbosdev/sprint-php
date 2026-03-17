@@ -156,12 +156,14 @@ class Router
             $class = $middleware['class'];
             $method = $middleware['method'];
 
-            if (!method_exists($class, $method))
+            $instance = new $class();
+
+            if (!method_exists($instance, $method))
             {
                 throw new Exception("Middleware {$class}::{$method} não encontrado", 500);
             }
 
-            $class::{$method}();
+            $instance->{$method}();
         }
     }
 
