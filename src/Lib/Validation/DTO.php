@@ -2,9 +2,9 @@
 
 namespace SprintPHP\Lib\Validation;
 
-use App\Api\Exception\ValidationException;
 use Exception;
 use ReflectionClass;
+use SprintPHP\Exception\ValidationException;
 use Symfony\Component\Validator\Validation;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Component\Validator\ConstraintViolationListInterface;
@@ -75,7 +75,7 @@ class DTO
         {
             if ($flApi)
             {
-                throw new ValidationException($this->formatarErrosApi($errors));
+                throw new ValidationException($errors);
             }
 
             return $this->formatarErros($errors);
