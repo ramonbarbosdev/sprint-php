@@ -1,0 +1,10 @@
+{
+  "name": "ramoncode/sprint-php",
+  "description": "Lightweight PHP framework inspired by Spring Boot",
+  "autoload": {
+    "psr-4": {
+      "SprintPHP\\": "src/"
+    }
+  },
+  "require": {}
+}
