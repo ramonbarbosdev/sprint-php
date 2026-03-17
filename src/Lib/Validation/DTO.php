@@ -70,8 +70,7 @@ class DTO
 
 
         $errors = $this->validator->validate($dto, $constraints, $groups);
-        var_dump(count($errors));
-        die;
+        
         if (count($errors) > 0)
         {
             if ($flApi)
