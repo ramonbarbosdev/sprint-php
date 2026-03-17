@@ -12,6 +12,8 @@ class ExceptionHandler
     {
         if ($e instanceof ValidationException)
         {
+             var_dump($e->getErrors());
+    die;
             Response::error(
                 $e->getMessage() ?: "Erro de validação",
                 400,
