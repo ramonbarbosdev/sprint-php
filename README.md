@@ -1,6 +1,6 @@
 # SprintPHP
 
-**SprintPHP** é um micro-framework PHP moderno, inspirado em **Spring Boot, Laravel e NestJS**, focado em:
+**SprintPHP** é um micro-framework PHP, inspirado em **Spring Boot, Laravel e NestJS**, focado em:
 
 * Alta produtividade
 * Arquitetura modular
@@ -11,9 +11,11 @@
 
 ---
 
-# Instalação
+# Começando rápido (Quick Start)
 
-Via Composer:
+Este guia cria uma API funcional em menos de 5 minutos.
+
+## 1. Instalar o framework
 
 ```bash
 composer require ramoncode/sprint-php
@@ -21,7 +23,7 @@ composer require ramoncode/sprint-php
 
 ---
 
-# Estrutura recomendada
+## 2. Criar estrutura básica
 
 ```bash
 project/
@@ -29,15 +31,14 @@ project/
 ├── app/
 │   └── Api/
 │       ├── Controller/
-│       ├── Kernel/
-│       │   └── ApiKernel.php
-│       └── Docs/
+│       │   └── TestController.php
+│       └── Kernel/
+│           └── ApiKernel.php
 │
 ├── config/
 │   └── database.php
 │
 ├── api.php
-│   
 │
 ├── vendor/
 └── composer.json
@@ -45,9 +46,9 @@ project/
 
 ---
 
-# Inicialização
+## 3. Criar o entrypoint da aplicação
 
-## `api.php`
+### `public/api.php`
 
 ```php
 use SprintPHP\Core\Application;
@@ -64,9 +65,15 @@ $app->run();
 
 ---
 
-# Kernel (ponto central da aplicação)
+## 4. Criar o Kernel
 
-## `ApiKernel.php`
+O Kernel é o **coração da aplicação**. Ele define:
+
+* bootstrap (configurações)
+* controllers
+* middlewares
+
+### `app/Api/Kernel/ApiKernel.php`
 
 ```php
 namespace App\Api\Kernel;
@@ -77,29 +84,33 @@ class ApiKernel extends BaseKernel
 {
     protected function bootstrap(): void
     {
+        // Configurações iniciais (DB, env, etc)
         require_once __DIR__ . '/../../../config/database.php';
     }
 
     protected function registerControllers(): void
     {
+        // Auto-descobre controllers
         $this->scanControllers(__DIR__ . '/../Controller');
     }
 
     protected function registerMiddlewares(): void
     {
-        // Middlewares globais (opcional)
-        // $this->app->use(ApiAuthMiddleware::class);
+        // Exemplo:
+        // $this->app->use(AuthMiddleware::class);
     }
 }
 ```
 
 ---
 
-# Controllers
+## 5. Criar seu primeiro Controller
 
-## Exemplo básico
+### `app/Api/Controller/TestController.php`
 
 ```php
+namespace App\Api\Controller;
+
 use SprintPHP\Attributes\Controller;
 use SprintPHP\Attributes\Get;
 
@@ -109,7 +120,72 @@ class TestController
     #[Get('')]
     public function index()
     {
-        return ["ok" => true];
+        return ["message" => "SprintPHP funcionando 🚀"];
+    }
+}
+```
+
+---
+
+## 6. Rodar o servidor
+
+```bash
+php -S localhost:8000 -t public
+```
+
+Acesse:
+
+```
+http://localhost:8000/test
+```
+
+Resposta esperada:
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "SprintPHP funcionando"
+  }
+}
+```
+
+---
+
+# Como o framework funciona
+
+Fluxo interno:
+
+```text
+Request
+ → Application
+ → Kernel
+ → Router
+ → Middleware
+ → Controller
+ → Response
+```
+
+---
+
+# Controllers
+
+Controllers usam **Attributes** para definir rotas.
+
+```php
+#[Controller('/users')]
+class UserController
+{
+    #[Get('')]
+    public function list()
+    {
+        return [];
+    }
+
+    #[Get('/{id}')]
+    public function show(int $id)
+    {
+        return ["id" => $id];
     }
 }
 ```
@@ -118,20 +194,7 @@ class TestController
 
 # Middleware
 
-## Interface
-
-```php
-namespace SprintPHP\Contracts;
-
-interface MiddlewareInterface
-{
-    public function handle(): void;
-}
-```
-
----
-
-## Exemplo
+## Criando um middleware
 
 ```php
 use SprintPHP\Contracts\MiddlewareInterface;
@@ -140,14 +203,14 @@ class AuthMiddleware implements MiddlewareInterface
 {
     public function handle(): void
     {
-        // valida token
+        // validar token
     }
 }
 ```
 
 ---
 
-## Uso por rota
+## Usando em uma rota
 
 ```php
 use SprintPHP\Attributes\Middleware;
@@ -162,39 +225,51 @@ public function secure()
 
 ---
 
+## Middleware global
+
+```php
+protected function registerMiddlewares(): void
+{
+    $this->app->use(AuthMiddleware::class);
+}
+```
+
+---
+
 # Rotas públicas
 
-Para ignorar middleware global:
+Ignora middleware global:
 
 ```php
 use SprintPHP\Attributes\PublicRoute;
 
 #[Get('/docs')]
 #[PublicRoute]
-
 public function docs()
 {
-    return [...];
+    return [];
 }
 ```
 
 ---
 
-# Injeção de dados (Request Binding)
+# Binding automático (Request → parâmetros)
 
-SprintPHP faz binding automático de:
+SprintPHP injeta automaticamente dados da request:
 
-| Tipo  | Fonte   |
-| ----- | ------- |
-| Param | URL     |
-| Query | ?param= |
-| Body  | JSON    |
+| Tipo  | Origem              |
+| ----- | ------------------- |
+| Param | URL (`/users/{id}`) |
+| Query | `?page=1`           |
+| Body  | JSON                |
 
 ---
 
 ## Exemplo
 
 ```php
+use SprintPHP\Attributes\Param;
+
 #[Get('/user/{id}')]
 public function show(#[Param] int $id)
 {
@@ -206,60 +281,29 @@ public function show(#[Param] int $id)
 
 # Validação automática
 
-Suporte a:
-
 ```php
-#[Min(1)]
-#[Max(100)]
-#[Required]
+use SprintPHP\Attributes\Min;
+use SprintPHP\Attributes\Max;
+
+public function list(
+    #[Min(1)] int $page,
+    #[Max(100)] int $limit
+) {}
 ```
 
-Exemplo:
-
-```php
-public function index(#[Min(1)] int $page)
-```
+Se inválido → erro automático na resposta.
 
 ---
 
-# Swagger / OpenAPI
+# Responses
 
-## Endpoint
-
-```php
-#[Controller('/docs')]
-class SwaggerController
-{
-    #[Get('')]
-    #[PublicRoute]
-    public function docs()
-    {
-        return OpenApiGenerator::generate(...);
-    }
-}
-```
-
----
-
-## IMPORTANTE
-
-Swagger exige resposta **RAW (sem wrapper)**:
-
-```php
-Response::raw(OpenApiGenerator::generate(...));
-```
-
----
-
-# Response
-
-## Padrão
+## Padrão (JSON estruturado)
 
 ```php
 return ["data" => "ok"];
 ```
 
-Retorna:
+Saída:
 
 ```json
 {
@@ -272,54 +316,86 @@ Retorna:
 
 ---
 
-## RAW (para Swagger / arquivos)
+## RAW (sem wrapper)
+
+Usado para:
+
+* Swagger
+* arquivos
+* responses customizadas
 
 ```php
+use SprintPHP\Http\Response;
+
 Response::raw($data);
 ```
 
 ---
 
-# Fluxo da aplicação
+# Swagger / OpenAPI
 
-```text
-Request
- → Application
- → Kernel (boot)
- → Router
- → Middleware
- → Controller
- → Response
+## Controller de documentação
+
+```php
+#[Controller('/docs')]
+class SwaggerController
+{
+    #[Get('')]
+    #[PublicRoute]
+    public function docs()
+    {
+        return Response::raw(
+            OpenApiGenerator::generate()
+        );
+    }
+}
 ```
 
 ---
 
-# Recursos principais
+# Estrutura recomendada (produção)
 
-* ✔ Attribute Routing
-* ✔ Middleware por rota
-* ✔ Middleware global
-* ✔ DTO Binding automático
-* ✔ Validação automática
-* ✔ OpenAPI Generator
-* ✔ Arquitetura modular
-* ✔ Compatível com Eloquent ORM
+```bash
+app/
+ ├── Api/
+ │   ├── Controller/
+ │   ├── Middleware/
+ │   ├── DTO/
+ │   ├── Service/
+ │   └── Kernel/
+```
+
+---
+
+# Integração com banco
+
+Exemplo:
+
+```php
+// config/database.php
+use Illuminate\Database\Capsule\Manager as Capsule;
+
+$capsule = new Capsule;
+$capsule->addConnection([...]);
+$capsule->bootEloquent();
+```
+
+---
+
+# Boas práticas
+
+* Use DTOs para entrada de dados
+* Separe lógica em Services
+* Use middleware para autenticação
+* Evite lógica pesada em controllers
 
 ---
 
 # Filosofia
 
-SprintPHP foi criado para:
-
 ```text
-simplicidade + poder + arquitetura limpa
+simplicidade + produtividade + arquitetura limpa
 ```
-
-Inspirado em:
-
-* Spring Boot
-* Laravel
-* NestJS
 
 ---
 
@@ -330,6 +406,6 @@ Desenvolvedor de Sistemas
 
 ---
 
-# 📄 Licença
+# Licença
 
 MIT
