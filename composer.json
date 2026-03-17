@@ -1,6 +1,6 @@
 {
   "name": "ramoncode/sprint-php",
-  "description": "SprintPHP - Lightweight PHP framework inspired by Spring Boot",
+  "description": "SprintPHP - Framework PHP leve inspirado no Spring Boot, Laravel, NestJS",
   "type": "library",
   "license": "MIT",
 

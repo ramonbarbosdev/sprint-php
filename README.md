@@ -171,6 +171,7 @@ use SprintPHP\Attributes\PublicRoute;
 
 #[Get('/docs')]
 #[PublicRoute]
+
 public function docs()
 {
     return [...];
@@ -303,17 +304,6 @@ Request
 * ✔ OpenAPI Generator
 * ✔ Arquitetura modular
 * ✔ Compatível com Eloquent ORM
-
----
-
-# Roadmap
-
-* [ ] Dependency Injection (DI Container)
-* [ ] Service Providers
-* [ ] Modules (como Spring)
-* [ ] Cache Layer
-* [ ] Event System
-* [ ] CLI (artisan-like)
 
 ---
 
