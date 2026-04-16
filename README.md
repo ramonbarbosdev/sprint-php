@@ -1,6 +1,6 @@
 # SprintPHP
 
-**SprintPHP** é um micro-framework PHP, inspirado em **Spring Boot, Laravel e NestJS**, focado em:
+**SprintPHP** é uma biblioteca PHP, inspirado em **Spring Boot, Laravel e NestJS**, focado em:
 
 * Alta produtividade
 * Arquitetura modular
@@ -15,7 +15,7 @@
 
 Este guia cria uma API funcional em menos de 5 minutos.
 
-## 1. Instalar o framework
+## 1. Instalar 
 
 ```bash
 composer require ramoncode/sprint-php
